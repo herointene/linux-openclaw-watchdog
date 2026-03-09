@@ -1,34 +1,37 @@
 #!/bin/bash
 
+# ==========================================
+# OpenClaw Bash Watchdog (Ultra-Reliable)
+# ==========================================
+# 原生 Bash 版本，免虛擬環境與 Python 依賴。
+
 # 確保腳本在專案根目錄執行
 cd "$(dirname "$0")"
 PROJECT_DIR=$(pwd)
 USER_NAME=$(whoami)
 
-echo "🐾 準備部署 OpenClaw Watchdog (Universal Edition)..."
+echo "🐾 準備部署 OpenClaw Bash Watchdog..."
 
 # 1. 檢查 .env
 if [ ! -f "$PROJECT_DIR/.env" ]; then
-    echo "⚠️ 找不到 .env 檔案！正在從 .env.example 複製..."
-    cp .env.example .env
-    echo "❌ 請先編輯 .env 檔案填入 WATCHDOG_WEBHOOK_URL，然後再執行此腳本。"
+    echo "⚠️ 找不到 .env 檔案！正在建立預設環境檔案..."
+    cat > .env << EOF
+WATCHDOG_WEBHOOK_URL=""
+OPENCLAW_CONFIG_PATH="$HOME/.openclaw/openclaw.json"
+WATCHDOG_CHECK_INTERVAL=15
+WATCHDOG_GRACE_SEC=120
+EOF
+    echo "❌ 請編輯 .env 檔案填入 WATCHDOG_WEBHOOK_URL，然後再執行此腳本。"
     exit 1
 fi
 
-# 2. 處理 Python 依賴
-echo "📦 正在安裝 Python 依賴..."
-
-# 嘗試使用虛擬環境 (最優解)
-if python3 -m venv venv 2>/dev/null; then
-    echo "✅ 虛擬環境建立成功。"
-    PYTHON_EXEC="$PROJECT_DIR/venv/bin/python3"
-    $PYTHON_EXEC -m pip install -r requirements.txt
-else
-    # 如果 venv 失敗 (缺少 python3-venv)，則使用 --break-system-packages 強行安裝 (相容性方案)
-    echo "⚠️ 虛擬環境建立失敗，切換到全域強行安裝模式 (--break-system-packages)..."
-    PYTHON_EXEC="/usr/bin/python3"
-    python3 -m pip install --break-system-packages -r requirements.txt || pip3 install --break-system-packages -r requirements.txt
-fi
+# 2. 檢查必要工具
+for tool in jq curl stat cmp; do
+    if ! command -v $tool >/dev/null 2>&1; then
+        echo "❌ 缺少必要工具: $tool (請先安裝: sudo apt install $tool)"
+        exit 1
+    fi
+done
 
 # 3. 建立 Systemd 服務
 SERVICE_FILE="/etc/systemd/system/openclaw-watchdog.service"
@@ -36,7 +39,7 @@ echo "⚙️ 正在產生 Systemd 服務檔 ($SERVICE_FILE)..."
 
 sudo bash -c "cat > $SERVICE_FILE" << EOF
 [Unit]
-Description=OpenClaw Gateway Watchdog
+Description=OpenClaw Gateway Watchdog (Bash Edition)
 After=network.target
 
 [Service]
@@ -44,7 +47,7 @@ Type=simple
 User=$USER_NAME
 WorkingDirectory=$PROJECT_DIR
 EnvironmentFile=$PROJECT_DIR/.env
-ExecStart=$PYTHON_EXEC $PROJECT_DIR/watchdog.py
+ExecStart=/usr/bin/bash $PROJECT_DIR/watchdog.sh
 Restart=always
 RestartSec=10
 
@@ -61,3 +64,4 @@ sudo systemctl restart openclaw-watchdog
 echo ""
 echo "✅ 部署完成！"
 echo "狀態檢查: sudo systemctl status openclaw-watchdog"
+echo "狀態檢查: systemctl --user status openclaw-gateway"
