@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ==========================================
-# OpenClaw Bash Watchdog (Rigorous v3)
+# OpenClaw Bash Watchdog
 # ==========================================
 
 # 1. 載入環境變數與清理

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ==========================================
-# OpenClaw Bash Watchdog (Rigorous Edition)
+# OpenClaw Watchdog Installer
 # ==========================================
 
 # 確保腳本在專案根目錄執行
@@ -12,7 +12,7 @@ PROJECT_DIR=$(pwd)
 REAL_USER="${SUDO_USER:-$USER}"
 REAL_HOME=$(eval echo "~$REAL_USER")
 
-echo "🐾 正在部署 OpenClaw Watchdog (Rigorous Edition)..."
+echo "🐾 正在部署 OpenClaw Watchdog..."
 echo "👤 執行使用者: $REAL_USER"
 echo "🏠 使用者目錄: $REAL_HOME"
 
