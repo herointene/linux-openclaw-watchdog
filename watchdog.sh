@@ -25,8 +25,14 @@ CHECK_INTERVAL="${WATCHDOG_CHECK_INTERVAL:-15}"
 GRACE_SEC="${WATCHDOG_GRACE_SEC:-120}"
 
 log() {
+    # 輸出到 stdout 供 systemd journal 捕獲，同時紀錄詳細內容
     echo "[$(date -Iseconds)] $1"
 }
+
+# 偵錯：啟動時列印關鍵變數
+log "🔍 偵錯資訊: USER=$USER, HOME=$HOME, PROJECT_DIR=$PROJECT_DIR"
+log "🔍 偵錯資訊: OPENCLAW_CONFIG=$OPENCLAW_CONFIG"
+log "🔍 偵錯資訊: XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR"
 
 send_discord() {
     local title="$1"
@@ -66,10 +72,21 @@ NOTIFIED_EDITING=0
 while true; do
     # 1. 檢查 JSON 合法性 (需要 jq)
     if [[ ! -f "$OPENCLAW_CONFIG" ]]; then
-        JSON_OK=1 # Missing file
+        log "❌ 找不到設定檔: $OPENCLAW_CONFIG"
+        JSON_OK=1
     else
-        jq . "$OPENCLAW_CONFIG" > /dev/null 2>&1
-        JSON_OK=$?
+        # 強制使用絕對路徑並檢查讀取權限
+        if [[ ! -r "$OPENCLAW_CONFIG" ]]; then
+            log "❌ 無法讀取設定檔 (權限不足): $OPENCLAW_CONFIG"
+            JSON_OK=1
+        else
+            # 獲取 jq 輸出以便偵錯
+            JQ_OUT=$(jq . "$OPENCLAW_CONFIG" 2>&1 >/dev/null)
+            JSON_OK=$?
+            if [[ $JSON_OK -ne 0 ]]; then
+                log "❌ JSON 格式檢查失敗: $JQ_OUT"
+            fi
+        fi
     fi
 
     if [[ $JSON_OK -ne 0 ]]; then
