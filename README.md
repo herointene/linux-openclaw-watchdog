@@ -1,4 +1,4 @@
-# 🐾 OpenClaw Watchdog | OpenClaw 守門犬 (Bash Edition)
+# 🐾 OpenClaw Watchdog | OpenClaw 守門犬
 
 [English](#english) | [中文](#中文)
 
@@ -7,83 +7,81 @@
 <a name="english"></a>
 ## English
 
-OpenClaw Watchdog is a lightweight, ultra-reliable background daemon designed for [OpenClaw](https://github.com/openclaw/openclaw). 
+OpenClaw Watchdog is a lightweight, high-reliability background daemon designed for [OpenClaw](https://github.com/openclaw/openclaw).
 
-**This version is built entirely in Bash**, removing all Python dependencies and virtual environment complexities. It integrates natively with `systemd --user` to manage your OpenClaw Gateway.
+Built natively for Linux environments, it provides real-time monitoring of your OpenClaw Gateway and its configuration integrity. When the gateway crashes or a configuration file becomes corrupted, the Watchdog performs automated recovery and broadcasts status alerts to your Discord channels.
 
 ### ✨ Key Features
 
-1. **Native Integration**: Uses `systemctl --user` to directly monitor and restart the OpenClaw Gateway.
-2. **Auto Backup**: Automatically synchronizes healthy configs to `openclaw.json.bak`.
-3. **Auto Rollback**: If config corruption is detected, it automatically restores from `.bak` and restarts the service.
-4. **🧠 Smart Debounce**: **Prevents overwriting your work-in-progress!** It detects file modification time (`mtime`) and grants a 120s grace period. If you are actively editing the file, Watchdog waits patiently.
-5. **Real-time Webhook Alerts**: Discord notifications for all status changes using `curl` and `jq`.
-6. **Zero Dependencies**: No Python, no `pip`, no `venv`. Requires only `bash`, `curl`, and `jq`.
+1.  **Systemd Integration**: Native management of the OpenClaw Gateway service via `systemctl --user`, ensuring the process is restarted immediately upon failure.
+2.  **Configuration Guard**: Automatically backs up valid `openclaw.json` files and performs an atomic rollback if the current configuration is unparseable.
+3.  **🧠 Smart Debounce**: Designed for human interaction. It detects manual edits to the configuration and enters a 120s grace period, preventing accidental rollbacks while you are mid-edit.
+4.  **Zero-Dependency Design**: Written entirely in Bash. Requires only standard system utilities: `bash`, `curl`, and `jq`.
+5.  **Instant Notifications**: Real-time logging and Discord Webhook alerts for all recovery actions (restarts, backups, and restores).
 
-### 🚀 Quick Deploy
+### 🚀 Quick Start
 
 ```bash
-# 1. Clone and setup
-git clone https://github.com/yourusername/openclaw-watchdog.git
-cd openclaw-watchdog
-cp .env.example .env
-nano .env  # Fill in WATCHDOG_WEBHOOK_URL
+# 1. Clone the repository
+git clone https://github.com/herointene/linux-openclaw-watchdog.git
+cd linux-openclaw-watchdog
 
-# 2. One-command deploy (Registers systemd service)
+# 2. Setup environment
+cp .env.example .env
+nano .env  # Enter your WATCHDOG_WEBHOOK_URL
+
+# 3. Deploy
 bash install.sh
 ```
 
-Done! Check status: `sudo systemctl status openclaw-watchdog`
-
-### Configuration (.env)
+### 🔧 Configuration (.env)
 
 | Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `WATCHDOG_WEBHOOK_URL` | ✅ Yes | - | Discord webhook URL |
-| `OPENCLAW_CONFIG_PATH` | ❌ No | `~/.openclaw/openclaw.json` | Path to config |
-| `WATCHDOG_CHECK_INTERVAL` | ❌ No | `15` | Check interval (seconds) |
-| `WATCHDOG_GRACE_SEC` | ❌ No | `120` | Human edit grace period (seconds) |
+| :--- | :--- | :--- | :--- |
+| `WATCHDOG_WEBHOOK_URL` | ✅ Yes | - | Discord Webhook URL for alerts |
+| `OPENCLAW_CONFIG_PATH` | ❌ No | `~/.openclaw/openclaw.json` | Absolute path to your config |
+| `WATCHDOG_CHECK_INTERVAL` | ❌ No | `15` | Polling frequency in seconds |
+| `WATCHDOG_GRACE_SEC` | ❌ No | `120` | Grace period for manual edits |
 
 ---
 
 <a name="中文"></a>
 ## 中文
 
-OpenClaw Watchdog 是一個輕量級、極度可靠的背景守護程式 (Daemon)，專門為 [OpenClaw](https://github.com/openclaw/openclaw) 打造。
+OpenClaw Watchdog 是一個輕量、高可靠的背景守護程式 (Daemon)，專為 [OpenClaw](https://github.com/openclaw/openclaw) 量身打造。
 
-**此版本完全基於 Bash 編寫**，移除了所有 Python 依賴與虛擬環境的複雜性，原生整合 `systemd --user` 來管理您的 OpenClaw Gateway。
+基於原生 Linux 環境開發，它能即時監控 OpenClaw Gateway 的運行狀態與配置文件的完整性。當服務崩潰或配置損壞時，Watchdog 會自動執行恢復流程，並將狀態告警發布至您的 Discord 頻道。
 
 ### ✨ 核心特色
 
-1. **原生整合**：使用 `systemctl --user` 直接監控與重啟 OpenClaw Gateway 服務。
-2. **自動備份配置**：當 Config 格式合法時，自動同步備份為 `openclaw.json.bak`。
-3. **損壞自動回退 (Rollback)**：偵測到 JSON 格式損壞時，自動從 `.bak` 恢復並重啟服務。
-4. **🧠 智能防呆 (Smart Debounce)**：**防止覆蓋人工修改！** 偵測文件修改時間 (`mtime`) 並提供 120 秒寬限期，只要您正在編輯文件，Watchdog 就會耐心等待。
-5. **即時 Webhook 警報**：透過 `curl` 與 `jq` 發送 Discord 即時通知。
-6. **零依賴**：免 Python、免 `pip`、免 `venv`。僅需 `bash`, `curl`, `jq`。
+1.  **原生系統整合**：透過 `systemctl --user` 直接管理 OpenClaw 服務，確保進程崩潰時秒級重啟。
+2.  **配置自動防護**：自動備份健康的 `openclaw.json`，並在偵測到當前配置無法解析時自動執行原子級回退。
+3.  **🧠 智能防呆 (Smart Debounce)**：針對人工操作優化。當偵測到文件正在被編輯時，自動進入 120 秒寬限期，避免在您修改到一半時強制還原。
+4.  **零依賴設計**：純 Bash 編寫，無需安裝任何運行環境。僅需系統自帶的 `bash`, `curl`, `jq`。
+5.  **即時告警系統**：所有恢復行為（重啟、備份、還原）均會記錄至系統日誌並透過 Discord Webhook 即時推播。
 
-### 🚀 一鍵部署
+### 🚀 快速開始
 
 ```bash
-# 1. 下載並設定
-git clone https://github.com/yourusername/openclaw-watchdog.git
-cd openclaw-watchdog
-cp .env.example .env
-nano .env  # 填入 WATCHDOG_WEBHOOK_URL
+# 1. 下載倉庫
+git clone https://github.com/herointene/linux-openclaw-watchdog.git
+cd linux-openclaw-watchdog
 
-# 2. 一鍵部署（註冊 systemd 服務）
+# 2. 配置文件
+cp .env.example .env
+nano .env  # 填入您的 WATCHDOG_WEBHOOK_URL
+
+# 3. 部署服務
 bash install.sh
 ```
 
-完成！查看狀態：`sudo systemctl status openclaw-watchdog`
+### 🔧 配置說明 (.env)
 
-### 配置說明 (.env)
-
-| 變數名 | 必填 | 預設值 | 說明 |
-|--------|------|--------|------|
-| `WATCHDOG_WEBHOOK_URL` | ✅ 是 | - | Discord Webhook 網址 |
-| `OPENCLAW_CONFIG_PATH` | ❌ 否 | `~/.openclaw/openclaw.json` | 設定檔路徑 |
-| `WATCHDOG_CHECK_INTERVAL` | ❌ 否 | `15` | 檢查頻率（秒） |
+| 變數名稱 | 必填 | 預設值 | 說明 |
+| :--- | :--- | :--- | :--- |
+| `WATCHDOG_WEBHOOK_URL` | ✅ 是 | - | 用於發送告警的 Discord Webhook |
+| `OPENCLAW_CONFIG_PATH` | ❌ 否 | `~/.openclaw/openclaw.json` | 設定檔的絕對路徑 |
+| `WATCHDOG_CHECK_INTERVAL` | ❌ 否 | `15` | 輪詢檢查頻率（秒） |
 | `WATCHDOG_GRACE_SEC` | ❌ 否 | `120` | 人工修改寬限期（秒） |
 
 ---
