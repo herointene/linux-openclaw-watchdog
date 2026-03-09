@@ -5,7 +5,7 @@ cd "$(dirname "$0")"
 PROJECT_DIR=$(pwd)
 USER_NAME=$(whoami)
 
-echo "🐾 準備部署 OpenClaw Watchdog..."
+echo "🐾 準備部署 OpenClaw Watchdog (Venv Edition)..."
 
 # 1. 檢查 .env
 if [ ! -f "$PROJECT_DIR/.env" ]; then
@@ -15,11 +15,17 @@ if [ ! -f "$PROJECT_DIR/.env" ]; then
     exit 1
 fi
 
-# 2. 安裝 Python 依賴 (改用 python3 -m pip 以提高相容性)
-echo "📦 正在安裝 Python 依賴 (requests, python-dotenv)..."
-python3 -m pip install -r requirements.txt || pip3 install -r requirements.txt || { echo "❌ 依賴安裝失敗，請確認已安裝 python3-pip"; exit 1; }
+# 2. 建立虛擬環境 (解決 externally-managed-environment 報錯)
+echo "虚拟环境：正在初始化 venv..."
+if [ ! -d "venv" ]; then
+    python3 -m venv venv || { echo "❌ 無法建立虛擬環境，請執行 'sudo apt install python3-venv' 後再試"; exit 1; }
+fi
 
-# 3. 建立 Systemd 服務
+# 3. 安裝依賴到虛擬環境
+echo "📦 正在安裝 Python 依賴到虛擬環境..."
+./venv/bin/pip install -r requirements.txt || { echo "❌ 依賴安裝失敗"; exit 1; }
+
+# 4. 建立 Systemd 服務 (ExecStart 指向虛擬環境的 Python)
 SERVICE_FILE="/etc/systemd/system/openclaw-watchdog.service"
 echo "⚙️ 正在產生 Systemd 服務檔 ($SERVICE_FILE)..."
 
@@ -33,7 +39,8 @@ Type=simple
 User=$USER_NAME
 WorkingDirectory=$PROJECT_DIR
 EnvironmentFile=$PROJECT_DIR/.env
-ExecStart=/usr/bin/python3 $PROJECT_DIR/watchdog.py
+# 使用虛擬環境中的 python 執行，這樣就不會受到系統 Python 限制的影響
+ExecStart=$PROJECT_DIR/venv/bin/python3 $PROJECT_DIR/watchdog.py
 Restart=always
 RestartSec=10
 
@@ -41,12 +48,12 @@ RestartSec=10
 WantedBy=multi-user.target
 EOF
 
-# 4. 啟動服務
+# 5. 啟動服務
 echo "🚀 正在重新載入 Systemd 並啟動服務..."
 sudo systemctl daemon-reload
 sudo systemctl enable openclaw-watchdog
 sudo systemctl restart openclaw-watchdog
 
 echo ""
-echo "✅ 部署完成！"
+echo "✅ 部署完成！(已自動配置虛擬環境)"
 echo "狀態檢查: sudo systemctl status openclaw-watchdog"
